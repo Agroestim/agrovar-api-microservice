@@ -29,7 +29,10 @@ SECRET_KEY = os.environ.get("AGROVAR_SECRET_KEY", None)
 DEBUG = bool(os.environ.get("AGROVAR_DEBUG_MODE", None))
 
 # ALLOWED_HOSTS = os.environ.get("AGROVAR_ALLOWED_HOSTS", "localhost").split(",")
-
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+]
 
 # Application definition
 
