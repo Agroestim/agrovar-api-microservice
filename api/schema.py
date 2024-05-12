@@ -46,18 +46,22 @@ class CampaignDocumentType:
 
 
 @strawberry.type
-class PreflightVarietyGroupType: ...
+class VarietyOptionsType:
+
+    id: int
+
+    tradename: str
+
+    variant_name: str
 
 
 @strawberry.type
-class VarietyGroupType: ...
+class MixedType:
 
-
-@strawberry.type
-class CampaignQueryType:
-
-    @strawberry.field
-    def document(self, info: Info) -> typing.List[CampaignDocumentType]:
+    @strawberry.field(description="A list of all campaign documents registered.")
+    def resolve_document(
+        self, info: Info, limit: int
+    ) -> typing.List[CampaignDocumentType]:
         campaign_document_queryset = [
             CampaignDocumentType(
                 id=entry.id,
@@ -78,12 +82,26 @@ class CampaignQueryType:
                 proteins_percentage_stat=entry.proteins_percentage_stat,  # type: ignore
                 ph_stat=entry.ph_stat,  # type: ignore
             )
-            for entry in models.CampaignDocumentsModel.objects.all()
+            for entry in models.CampaignDocumentsModel.objects.all()[:limit]
         ]
 
         return campaign_document_queryset
 
+    @strawberry.field(
+        description="A preflight query that resolves the varieties options registered."
+    )
+    def resolve_variety_options(self, info: Info) -> typing.List[VarietyOptionsType]:
+        variety_options_queryset = [
+            VarietyOptionsType(
+                id=entry.id,
+                tradename=entry.tradename,
+                variant_name=entry.variant_name,
+            )
+            for entry in models.VarietyOptionsModel.objects.all()
+        ]
+        return variety_options_queryset
+
 
 STRAWBERRY_SCHEMA = strawberry.Schema(
-    query=CampaignQueryType,
+    query=MixedType,
 )

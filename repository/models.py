@@ -113,7 +113,7 @@ class CampaignDocumentsModel(models.Model):
         blank=False,
         null=False,
         choices=VARITIES_CHOICES,
-        default="Seleccionar",
+        default="--Seleccionar--",
     )
 
     humidity_percentage_stat = models.DecimalField(
@@ -174,4 +174,28 @@ class CampaignDocumentsModel(models.Model):
         decimal_places=2,
         blank=False,
         null=False,
+    )
+
+
+class VarietyOptionsModel(models.Model):
+    class Meta:
+        db_table = "variety_options"
+
+    id = models.AutoField(
+        verbose_name="Identificado unico",
+        primary_key=True,
+    )
+
+    tradename = models.CharField(
+        verbose_name="Nombre comercial de la variante",
+        max_length=25,
+        blank=False,
+        null=False,
+        default="--Tipear--",
+    )
+
+    variant_name = models.CharField(
+        verbose_name="Nombre especifico de la variante",
+        max_length=25,
+        default="--Tipear--",
     )

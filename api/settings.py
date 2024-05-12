@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 
+from corsheaders.defaults import default_headers, default_methods
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,7 +28,6 @@ SECRET_KEY = os.environ.get("AGROVAR_SECRET_KEY", None)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(os.environ.get("AGROVAR_DEBUG_MODE", None))
 
-ALLOWED_HOSTS = ["localhost"]
 # ALLOWED_HOSTS = os.environ.get("AGROVAR_ALLOWED_HOSTS", "localhost").split(",")
 
 
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "corsheaders",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "repository",
@@ -148,3 +150,19 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS configuration
 # https://github.com/adamchainz/django-cors-headers
+
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = (
+    *default_headers,
+    "Apollographql-Client-Name",
+    "Apollographql-Client-Version",
+)
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://127.0.0.1",
+]
