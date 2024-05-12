@@ -1,0 +1,11 @@
+# Django static files
+static/
+
+# Visua studio code workspace settings
+.vscode/
+
+# Virtual environment
+venv/
+
+# Ignore database file
+db.sqlite3
