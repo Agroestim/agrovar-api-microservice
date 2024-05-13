@@ -176,6 +176,9 @@ class CampaignDocumentsModel(models.Model):
         null=False,
     )
 
+    def __str__(self) -> str:
+        return f"{self.id} / {self.reference} - {self.paper_type} - {self.paper_creation_year} - {self.location_origing} - {self.crop_variety}"
+
 
 class VarietyOptionsModel(models.Model):
     class Meta:
@@ -199,3 +202,6 @@ class VarietyOptionsModel(models.Model):
         max_length=25,
         default="--Tipear--",
     )
+
+    def __str__(self) -> str:
+        return f"{self.id} / {self.tradename} - {self.variant_name}"
