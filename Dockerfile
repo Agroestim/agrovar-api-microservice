@@ -22,6 +22,7 @@ COPY . .
 WORKDIR /app
 
 # Run migrations
+RUN python manage.py migrate
 RUN python manage.py migrate repository
 
 # Run collect statics
