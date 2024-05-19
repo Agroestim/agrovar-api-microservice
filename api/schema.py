@@ -6,9 +6,67 @@ from strawberry.types import Info
 
 from repository import models
 
+# Query Resolvers
 
-@strawberry.type
+
+def resolve_campaign_document(
+    self, info: Info, offset: int, limit: int
+) -> typing.List["CampaignDocumentType"]:
+    return [
+        CampaignDocumentType(
+            id=entry.id,
+            reference=entry.reference,
+            paper_type=entry.paper_type,
+            paper_repetition=entry.paper_repetition,
+            paper_creation_year=entry.paper_creation_year,
+            location_origin=entry.location_origing,
+            latitude=entry.latitude,  # type: ignore
+            longitude=entry.longitude,  # type: ignore
+            crop_variety=entry.crop_variety,
+            humidity_percentage_stat=entry.humidity_percentage_stat,  # type: ignore
+            performance_stat=entry.performance_stat,  # type: ignore
+            relative_performance_stat=entry.relative_performance_stat,  # type: ignore
+            grain_count_crop_stat=entry.grain_count_crop_stat,
+            grain_count_per_spike_stat=entry.grain_count_per_spike_stat,
+            weight_per_thousand_grains_stat=entry.weight_per_thousand_grains_stat,  # type: ignore
+            proteins_percentage_stat=entry.proteins_percentage_stat,  # type: ignore
+            ph_stat=entry.ph_stat,  # type: ignore
+        )
+        for entry in models.CampaignDocumentsModel.objects.all()[:offset:limit]
+    ]
+
+
+def resolve_variety_options(self, info: Info) -> typing.List["VarietyOptionsType"]:
+    return [
+        VarietyOptionsType(
+            id=entry.id,
+            tradename=entry.tradename,
+            variant_name=entry.variant_name,
+        )
+        for entry in models.VarietyOptionsModel.objects.all()
+    ]
+
+
+def resolve_location_options(self, info: Info) -> typing.List["LocationOptionsType"]:
+    return [
+        LocationOptionsType(
+            id=entry.id,
+            region_name=entry.region_name,
+        )
+        for entry in models.LocationOptionsModel.objects.all()
+    ]
+
+
+# Strawberry Types
+
+
+@strawberry.type(
+    description="Represents a campaign document where stores all the crop information"
+)
 class CampaignDocumentType:
+    """
+    Represents a campaign document where stores all the crop information.
+    """
 
     id: int
 
@@ -45,8 +103,11 @@ class CampaignDocumentType:
     ph_stat: int
 
 
-@strawberry.type
+@strawberry.type(description="Represents a crop variety")
 class VarietyOptionsType:
+    """
+    Represents a crop variety.
+    """
 
     id: int
 
@@ -55,51 +116,54 @@ class VarietyOptionsType:
     variant_name: str
 
 
-@strawberry.type
-class MixedType:
+@strawberry.type(
+    description="Represents a location such a city where the campaign was documented"
+)
+class LocationOptionsType:
+    """
+    Represents a location such a city where the campaign was documented.
+    """
 
-    @strawberry.field(description="A list of all campaign documents registered.")
-    def resolve_document(
-        self, info: Info, limit: int
-    ) -> typing.List[CampaignDocumentType]:
-        campaign_document_queryset = [
-            CampaignDocumentType(
-                id=entry.id,
-                reference=entry.reference,
-                paper_type=entry.paper_type,
-                paper_creation_year=entry.paper_creation_year,
-                location_origin=entry.location_origing,
-                latitude=entry.latitude,  # type: ignore
-                longitude=entry.longitude,  # type: ignore
-                paper_repetition=entry.paper_repetition,
-                crop_variety=entry.crop_variety,
-                humidity_percentage_stat=entry.humidity_percentage_stat,  # type: ignore
-                performance_stat=entry.performance_stat,  # type: ignore
-                relative_performance_stat=entry.relative_performance_stat,  # type: ignore
-                grain_count_crop_stat=entry.grain_count_crop_stat,
-                grain_count_per_spike_stat=entry.grain_count_per_spike_stat,
-                weight_per_thousand_grains_stat=entry.weight_per_thousand_grains_stat,  # type: ignore
-                proteins_percentage_stat=entry.proteins_percentage_stat,  # type: ignore
-                ph_stat=entry.ph_stat,  # type: ignore
-            )
-            for entry in models.CampaignDocumentsModel.objects.all()[:limit]
-        ]
+    id: int
 
-        return campaign_document_queryset
+    region_name: str
 
-    @strawberry.field(
-        description="A preflight query that resolves the varieties options registered."
+
+@strawberry.type(
+    description="Represents a mixed query used for get the preflight data required by the frontend"
+)
+class PreflightOptionsType:
+    """
+    Represents a mixed query used for get the preflight data required by the frontend.
+    """
+
+    variety_options: typing.List[VarietyOptionsType] = strawberry.field(
+        resolver=resolve_variety_options,
+        description="Make a preflight query that resolve the crop variety options.",
     )
-    def resolve_variety_options(self, info: Info) -> typing.List[VarietyOptionsType]:
-        variety_options_queryset = [
-            VarietyOptionsType(
-                id=entry.id,
-                tradename=entry.tradename,
-                variant_name=entry.variant_name,
-            )
-            for entry in models.VarietyOptionsModel.objects.all()
-        ]
-        return variety_options_queryset
+
+    location_options: typing.List[LocationOptionsType] = strawberry.field(
+        resolver=resolve_location_options,
+        description="Make a preflight query that resolve the campaing location options.",
+    )
+
+
+@strawberry.type(
+    description="Represents a final mixed type that contains all of the possible operations available"
+)
+class MixedType:
+    """
+    Represents a final mixed type that contains all of the possible operations available.
+    """
+
+    campaign_documents: typing.List[CampaignDocumentType] = strawberry.field(
+        resolver=resolve_campaign_document,
+        description="asdasdasdasdasdasdasasd",
+    )
+
+    @strawberry.field(description="asdasdasdasd")
+    def preflight_options(self, info: Info) -> PreflightOptionsType:
+        return PreflightOptionsType()
 
 
 STRAWBERRY_SCHEMA = strawberry.Schema(

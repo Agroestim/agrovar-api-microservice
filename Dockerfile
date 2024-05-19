@@ -8,7 +8,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_SUPERUSER_PASSWORD rDb9v0M\2a,O8Yq
-ENV DJANGO_SUPERUSER_EMAIL dev.support@agrovar.com
+ENV DJANGO_SUPERUSER_EMAIL developers@agrovar.com
 
 # Install service dependencies
 RUN pip install --upgrade pip
@@ -22,9 +22,7 @@ COPY . .
 WORKDIR /app
 
 # Run migrations
-RUN python manage.py migrate
 RUN python manage.py migrate repository
-# RUN python manage.py makemigrations
 
 # Run collect statics
 RUN python manage.py collectstatic --no-input

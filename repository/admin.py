@@ -11,4 +11,12 @@ class CampaignDocumentsAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.VarietyOptionsModel)
-class VarietyOptionsAdmin(admin.ModelAdmin): ...
+class VarietyOptionsAdmin(admin.ModelAdmin):
+    # Filter by variety_name
+    list_filter = ["variant_name"]
+
+
+@admin.register(models.LocationOptionsModel)
+class LocationOptionsAdmin(admin.ModelAdmin):
+    # Filter by region_name
+    list_filter = ["region_name"]

@@ -5,6 +5,7 @@ class CampaignDocumentsModel(models.Model):
 
     class Meta:
         db_table = "campaign_documents"
+        db_table_comment = "This model stores the capaign documents"
 
     id = models.AutoField(
         verbose_name="Identificador Unico",
@@ -183,6 +184,7 @@ class CampaignDocumentsModel(models.Model):
 class VarietyOptionsModel(models.Model):
     class Meta:
         db_table = "variety_options"
+        db_table_comment = "This model stores the crop varieties"
 
     id = models.AutoField(
         verbose_name="Identificado unico",
@@ -205,3 +207,24 @@ class VarietyOptionsModel(models.Model):
 
     def __str__(self) -> str:
         return f"{self.id} / {self.tradename} - {self.variant_name}"
+
+
+class LocationOptionsModel(models.Model):
+    class Meta:
+        db_table = "location_options"
+        db_table_comment = "This model stores the campaing locations"
+
+    id = models.AutoField(
+        verbose_name="Identificador unico",
+        primary_key=True,
+    )
+
+    region_name = models.CharField(
+        verbose_name="Nombre de la region",
+        max_length=50,
+        blank=False,
+        null=False,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.id} / {self.region_name}"
