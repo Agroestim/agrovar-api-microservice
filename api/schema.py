@@ -19,10 +19,10 @@ def resolve_campaign_document(
             paper_type=entry.paper_type,
             paper_repetition=entry.paper_repetition,
             paper_creation_year=entry.paper_creation_year,
-            location_origin=entry.location_origing,
+            location_origin=entry.location_origin.region_name,
             latitude=entry.latitude,  # type: ignore
             longitude=entry.longitude,  # type: ignore
-            crop_variety=entry.crop_variety,
+            crop_variety=entry.crop_variety.variant_name,
             humidity_percentage_stat=entry.humidity_percentage_stat,  # type: ignore
             performance_stat=entry.performance_stat,  # type: ignore
             relative_performance_stat=entry.relative_performance_stat,  # type: ignore

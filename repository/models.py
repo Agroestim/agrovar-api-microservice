@@ -1,6 +1,55 @@
 from django.db import models
 
 
+class VarietyOptionsModel(models.Model):
+    class Meta:
+        db_table = "variety_options"
+        db_table_comment = "This model stores the crop varieties"
+
+    id = models.AutoField(
+        verbose_name="Identificado unico",
+        primary_key=True,
+    )
+
+    tradename = models.CharField(
+        verbose_name="Nombre comercial de la variante",
+        max_length=25,
+        blank=False,
+        null=False,
+        default="--Tipear--",
+    )
+
+    variant_name = models.CharField(
+        verbose_name="Nombre especifico de la variante",
+        max_length=25,
+        default="--Tipear--",
+    )
+
+    def __str__(self) -> str:
+        return f"{self.id} / {self.tradename} - {self.variant_name}"
+
+
+class LocationOptionsModel(models.Model):
+    class Meta:
+        db_table = "location_options"
+        db_table_comment = "This model stores the campaing locations"
+
+    id = models.AutoField(
+        verbose_name="Identificador unico",
+        primary_key=True,
+    )
+
+    region_name = models.CharField(
+        verbose_name="Nombre de la region",
+        max_length=50,
+        blank=False,
+        null=False,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.id} / {self.region_name}"
+
+
 class CampaignDocumentsModel(models.Model):
 
     class Meta:
@@ -44,23 +93,11 @@ class CampaignDocumentsModel(models.Model):
         auto_now=False,
     )
 
-    LOCATIONS_CHOICES = [
-        ("ADELIA MARIA", "Adelia Maria"),
-        ("BELL VILLE", "Bell Ville"),
-        ("JUSTINIANO POSSE", "Justiniano Posse"),
-        ("LA CARLOTA", "La Carlota"),
-        ("LABOULAYE", "Laboulaye"),
-        ("MARCOZ JUAREZ", "Marcos Juarez"),
-        ("ONAGOITY", "Onagoity"),
-    ]
-
-    location_origing = models.CharField(
+    location_origin = models.ForeignKey(
+        to=LocationOptionsModel,
+        on_delete=models.CASCADE,
+        related_name="location_origin",
         verbose_name="Localidad de origen",
-        max_length=50,
-        null=False,
-        blank=False,
-        default="Seleccionar",
-        choices=LOCATIONS_CHOICES,
     )
 
     latitude = models.DecimalField(
@@ -86,35 +123,11 @@ class CampaignDocumentsModel(models.Model):
         default=1,
     )
 
-    VARITIES_CHOICES = [
-        ("BUCKSY200", "Buck SY 200"),
-        ("LENOX", "Lenox"),
-        ("ACA360", "ACA 360"),
-        ("ACA365", "ACA 365"),
-        ("ALGARROBO", "Algarrobo"),
-        ("ARSLAK", "Arslak"),
-        ("BAGUETTE601", "Baguette 601"),
-        ("BASILIO", "Basilio"),
-        ("BG620", "Bg 620"),
-        ("BG750", "Bg 750"),
-        ("BIOINTA2004", "Biointa 2004"),
-        ("BIOINTA3005", "Biointa 3005"),
-        ("BIOINTA3006", "Biointa 3006"),
-        ("CEDRO", "Cedro"),
-        ("FLORIPAND", "Floripan 200"),
-        ("GUAYABO", "Guayabo"),
-        ("MSINTA119", "MS INTA 119"),
-        ("ÑANDUBAY", "Ñandubay"),
-        ("SURSEM2330", "Sursem 2330"),
-    ]
-
-    crop_variety = models.CharField(
+    crop_variety = models.ForeignKey(
+        to=VarietyOptionsModel,
+        on_delete=models.CASCADE,
+        related_name="crop_variety",
         verbose_name="Variedad del cultivo",
-        max_length=50,
-        blank=False,
-        null=False,
-        choices=VARITIES_CHOICES,
-        default="--Seleccionar--",
     )
 
     humidity_percentage_stat = models.DecimalField(
@@ -178,53 +191,4 @@ class CampaignDocumentsModel(models.Model):
     )
 
     def __str__(self) -> str:
-        return f"{self.id} / {self.reference} - {self.paper_type} - {self.paper_creation_year} - {self.location_origing} - {self.crop_variety}"
-
-
-class VarietyOptionsModel(models.Model):
-    class Meta:
-        db_table = "variety_options"
-        db_table_comment = "This model stores the crop varieties"
-
-    id = models.AutoField(
-        verbose_name="Identificado unico",
-        primary_key=True,
-    )
-
-    tradename = models.CharField(
-        verbose_name="Nombre comercial de la variante",
-        max_length=25,
-        blank=False,
-        null=False,
-        default="--Tipear--",
-    )
-
-    variant_name = models.CharField(
-        verbose_name="Nombre especifico de la variante",
-        max_length=25,
-        default="--Tipear--",
-    )
-
-    def __str__(self) -> str:
-        return f"{self.id} / {self.tradename} - {self.variant_name}"
-
-
-class LocationOptionsModel(models.Model):
-    class Meta:
-        db_table = "location_options"
-        db_table_comment = "This model stores the campaing locations"
-
-    id = models.AutoField(
-        verbose_name="Identificador unico",
-        primary_key=True,
-    )
-
-    region_name = models.CharField(
-        verbose_name="Nombre de la region",
-        max_length=50,
-        blank=False,
-        null=False,
-    )
-
-    def __str__(self) -> str:
-        return f"{self.id} / {self.region_name}"
+        return f"{self.id} / {self.paper_type} / {self.reference} - {self.location_origin.region_name} - {self.paper_creation_year} / {self.crop_variety.variant_name}"
