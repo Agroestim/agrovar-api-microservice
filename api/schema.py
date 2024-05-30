@@ -57,6 +57,21 @@ def resolve_location_options(self, info: Info) -> typing.List["LocationOptionsTy
     ]
 
 
+def resolve_campaign_document_option(
+    self, info: Info, offset: int, limit: int
+) -> typing.List["CampaignDocumentOptionType"]:
+    return [
+        CampaignDocumentOptionType(
+            id=entry.id,
+            reference=entry.reference,
+            location_origin=entry.location_origin.region_name,
+            date_origin=entry.paper_creation_year,
+            crop_variant=entry.crop_variety.variant_name,
+        )
+        for entry in models.CampaignDocumentsModel.objects.all()[:offset:limit]
+    ]
+
+
 # Strawberry Types
 
 
@@ -129,6 +144,23 @@ class LocationOptionsType:
     region_name: str
 
 
+@strawberry.type(description="Represents a campaign document")
+class CampaignDocumentOptionType:
+    """
+    Represents a campaign document type used for get the preflight data required by the frontend
+    """
+
+    id: int
+
+    reference: str
+
+    location_origin: str
+
+    date_origin: date
+
+    crop_variant: str
+
+
 @strawberry.type(
     description="Represents a mixed query used for get the preflight data required by the frontend"
 )
@@ -145,6 +177,11 @@ class PreflightOptionsType:
     location_options: typing.List[LocationOptionsType] = strawberry.field(
         resolver=resolve_location_options,
         description="Make a preflight query that resolve the campaing location options.",
+    )
+
+    campaign_options: typing.List[CampaignDocumentOptionType] = strawberry.field(
+        resolver=resolve_campaign_document_option,
+        description="Make a preflight query that resolves the campaign document options.",
     )
 
 
