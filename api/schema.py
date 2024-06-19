@@ -4,15 +4,25 @@ from datetime import date
 import strawberry
 from strawberry.types import Info
 
+from api.schema_pagination import (
+    decode_campaign_document_id_cursor,
+    encode_campaign_document_id_cursor,
+    use_resolve_cursor_hook,
+)
 from repository import models
 
-# Query Resolvers
+# Query field resolvers
 
 
 def resolve_campaign_document(
-    self, info: Info, offset: int, limit: int
-) -> typing.List["CampaignDocumentType"]:
-    return [
+    self, info: Info, limit: int, cursor: typing.Optional[str] = None
+) -> "PaginatedCampaignDocumentType":
+
+    sliced_campaign_documents, next_cursor = use_resolve_cursor_hook(
+        limit, cursor, models.CampaignDocumentsModel
+    )
+
+    sliced_entries = [
         CampaignDocumentType(
             id=entry.id,
             reference=entry.reference,
@@ -32,35 +42,67 @@ def resolve_campaign_document(
             proteins_percentage_stat=entry.proteins_percentage_stat,  # type: ignore
             ph_stat=entry.ph_stat,  # type: ignore
         )
-        for entry in models.CampaignDocumentsModel.objects.all()[:offset:limit]
+        for entry in sliced_campaign_documents
     ]
 
+    return PaginatedCampaignDocumentType(
+        entries=sliced_entries,
+        page_meta=PaginationMetaType(next_cursor=next_cursor),
+    )
 
-def resolve_variety_options(self, info: Info) -> typing.List["VarietyOptionsType"]:
-    return [
+
+def resolve_variety_options(
+    self, info: Info, limit: int, cursor: typing.Optional[str] = None
+) -> "PaginatedVarietyOptionsType":
+
+    sliced_variety_options, next_cursor = use_resolve_cursor_hook(
+        limit, cursor, models.VarietyOptionsModel
+    )
+
+    slice_entries = [
         VarietyOptionsType(
             id=entry.id,
             tradename=entry.tradename,
             variant_name=entry.variant_name,
         )
-        for entry in models.VarietyOptionsModel.objects.all()
+        for entry in sliced_variety_options
     ]
 
+    return PaginatedVarietyOptionsType(
+        options=slice_entries, page_meta=PaginationMetaType(next_cursor=next_cursor)
+    )
 
-def resolve_location_options(self, info: Info) -> typing.List["LocationOptionsType"]:
-    return [
+
+def resolve_location_options(
+    self, info: Info, limit: int, cursor: typing.Optional[str] = None
+) -> "PaginatedLocationOptionsType":
+
+    sliced_locations, next_cursor = use_resolve_cursor_hook(
+        limit, cursor, models.LocationOptionsModel
+    )
+
+    sliced_entries = [
         LocationOptionsType(
             id=entry.id,
             region_name=entry.region_name,
         )
-        for entry in models.LocationOptionsModel.objects.all()
+        for entry in sliced_locations
     ]
+
+    return PaginatedLocationOptionsType(
+        options=sliced_entries, page_meta=PaginationMetaType(next_cursor=next_cursor)
+    )
 
 
 def resolve_campaign_document_option(
-    self, info: Info, offset: int, limit: int
-) -> typing.List["CampaignDocumentOptionType"]:
-    return [
+    self, info: Info, limit: int, cursor: typing.Optional[str] = None
+) -> "PaginatedCampaignDocumentOptionsType":
+
+    sliced_campaign_documents, next_cursor = use_resolve_cursor_hook(
+        limit, cursor, models.CampaignDocumentsModel
+    )
+
+    slice_entries = [
         CampaignDocumentOptionType(
             id=entry.id,
             reference=entry.reference,
@@ -68,19 +110,93 @@ def resolve_campaign_document_option(
             date_origin=entry.paper_creation_year,
             crop_variant=entry.crop_variety.variant_name,
         )
-        for entry in models.CampaignDocumentsModel.objects.all()[:offset:limit]
+        for entry in sliced_campaign_documents
     ]
 
+    return PaginatedCampaignDocumentOptionsType(
+        options=slice_entries,
+        page_meta=PaginationMetaType(next_cursor=next_cursor),
+    )
 
-# Strawberry Types
+
+def resolve_preflight_options(self, info: Info) -> "PreflightOptionsType":
+    return PreflightOptionsType()
+
+
+# Pagination types
 
 
 @strawberry.type(
-    description="Represents a campaign document where stores all the crop information"
+    description="Represents the metadata required to perform a further query with additional data of the same type.",
 )
+class PaginationMetaType:
+    """
+    Represents the metadata required to perform a further query with additional data of the same type.
+    """
+
+    next_cursor: typing.Optional[str]
+
+
+@strawberry.type(
+    description="Represents a wrapper for the CampaignDocumentOptionsType query with the pagination metadata."
+)
+class PaginatedCampaignDocumentOptionsType:
+    """
+    Represents the pagination wrapper that provides the required data for manage the pagination of the queries.
+    """
+
+    options: typing.List["CampaignDocumentOptionType"]
+
+    page_meta: typing.Optional[PaginationMetaType]
+
+
+@strawberry.type(
+    description="Represents a wrapper for the LocationOptionsType query with the pagination metadata.",
+)
+class PaginatedLocationOptionsType:
+    """
+    Represents the pagination wrapper that provides the required data for manage the pagination of the queries.
+    """
+
+    options: typing.List["LocationOptionsType"]
+
+    page_meta: typing.Optional[PaginationMetaType]
+
+
+@strawberry.type(
+    description="Represents a wrapper for the VarietyOptionsType query with the pagination metadata.",
+)
+class PaginatedVarietyOptionsType:
+    """
+    Represents the pagination wrapper that provides the required data for manage the pagination of the queries.
+    """
+
+    options: typing.List["VarietyOptionsType"]
+
+    page_meta: typing.Optional[PaginationMetaType]
+
+
+@strawberry.type(
+    description="Represents a wrapper for the CampaignDocumentType query with the pagination metadata.",
+)
+class PaginatedCampaignDocumentType:
+    """
+    Represents the pagination wrapper that provides the required data for manage the pagination of the queries.
+    """
+
+    entries: typing.List["CampaignDocumentType"]
+
+    page_meta: typing.Optional[PaginationMetaType]
+
+
+# Other query types
+
+
+@strawberry.type(description="Represents a container for the campaign document.")
 class CampaignDocumentType:
     """
-    Represents a campaign document where stores all the crop information.
+    A campaign document is a paper that collects all the information about the certain crop and involved growth
+    variables.
     """
 
     id: int
@@ -118,10 +234,15 @@ class CampaignDocumentType:
     ph_stat: int
 
 
-@strawberry.type(description="Represents a crop variety")
+# Preflight options Query types
+
+
+@strawberry.type(
+    description="Represents a minimal set of information of a crop variety entry"
+)
 class VarietyOptionsType:
     """
-    Represents a crop variety.
+    Represents a minimal set of information a crop variety entry
     """
 
     id: int
@@ -132,11 +253,11 @@ class VarietyOptionsType:
 
 
 @strawberry.type(
-    description="Represents a location such a city where the campaign was documented"
+    description="Represents a minimal set of information of a crop variety entry"
 )
 class LocationOptionsType:
     """
-    Represents a location such a city where the campaign was documented.
+    Represents a minimal set of information of a location entry
     """
 
     id: int
@@ -144,10 +265,12 @@ class LocationOptionsType:
     region_name: str
 
 
-@strawberry.type(description="Represents a campaign document")
+@strawberry.type(
+    description="Represents a minimal set of information of a crop variety entry"
+)
 class CampaignDocumentOptionType:
     """
-    Represents a campaign document type used for get the preflight data required by the frontend
+    Represents a minimal set of information of a campaign document entry
     """
 
     id: int
@@ -161,47 +284,47 @@ class CampaignDocumentOptionType:
     crop_variant: str
 
 
-@strawberry.type(
-    description="Represents a mixed query used for get the preflight data required by the frontend"
-)
+# Composite preflight query types
+
+
+@strawberry.type(description="")
 class PreflightOptionsType:
     """
-    Represents a mixed query used for get the preflight data required by the frontend.
+    Represents a set of options that are required to preload the application options.
+    Like a form entry option or a user language preference.
     """
 
-    variety_options: typing.List[VarietyOptionsType] = strawberry.field(
+    variety_options: PaginatedVarietyOptionsType = strawberry.field(
         resolver=resolve_variety_options,
-        description="Make a preflight query that resolve the crop variety options.",
+        description="Resolves the variety preflight options",
     )
 
-    location_options: typing.List[LocationOptionsType] = strawberry.field(
+    location_options: PaginatedLocationOptionsType = strawberry.field(
         resolver=resolve_location_options,
-        description="Make a preflight query that resolve the campaing location options.",
+        description="Resolves the location preflight options",
     )
 
-    campaign_options: typing.List[CampaignDocumentOptionType] = strawberry.field(
+    campaign_options: PaginatedCampaignDocumentOptionsType = strawberry.field(
         resolver=resolve_campaign_document_option,
-        description="Make a preflight query that resolves the campaign document options.",
+        description="Resolves the campaign document preflight options",
     )
 
 
-@strawberry.type(
-    description="Represents a final mixed type that contains all of the possible operations available"
-)
+@strawberry.type()
 class MixedType:
-    """
-    Represents a final mixed type that contains all of the possible operations available.
-    """
 
-    campaign_documents: typing.List[CampaignDocumentType] = strawberry.field(
+    campaign_documents: PaginatedCampaignDocumentType = strawberry.field(
         resolver=resolve_campaign_document,
-        description="asdasdasdasdasdasdasasd",
     )
 
-    @strawberry.field(description="asdasdasdasd")
-    def preflight_options(self, info: Info) -> PreflightOptionsType:
-        return PreflightOptionsType()
+    preflight_options: PreflightOptionsType = strawberry.field(
+        resolver=resolve_preflight_options,
+    )
 
+
+# Mutation types
+
+# Graphql Schema
 
 STRAWBERRY_SCHEMA = strawberry.Schema(
     query=MixedType,

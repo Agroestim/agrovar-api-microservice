@@ -7,8 +7,8 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV DJANGO_SUPERUSER_PASSWORD rDb9v0M\2a,O8Yq
-ENV DJANGO_SUPERUSER_EMAIL developers@agrovar.com
+# ENV DJANGO_SUPERUSER_PASSWORD NOTE: Put a strongly passwor here. Do not do like me :)
+# ENV DJANGO_SUPERUSER_EMAIL NOTE: Put the developer manteiner email here. :)
 
 # Install service dependencies
 RUN pip install --upgrade pip
@@ -29,10 +29,10 @@ RUN python manage.py migrate repository
 RUN python manage.py collectstatic --no-input
 
 # Create superuser
-RUN python manage.py createsuperuser --no-input --username agrovar-tango-09
+RUN python manage.py createsuperuser --no-input --username agrovar-superadmin
 
 # Expose 
 EXPOSE 8000
 
 # Define the container entrypoint
-ENTRYPOINT [ "python", "manage.py", "runserver", "0.0.0.0:8000" ]
+ENTRYPOINT [ "python", "manage.py", "runserver", "localhost:8000" ]
