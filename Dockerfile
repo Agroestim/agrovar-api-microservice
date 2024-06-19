@@ -7,8 +7,8 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-# ENV DJANGO_SUPERUSER_PASSWORD NOTE: Put a strongly passwor here. Do not do like me :)
-# ENV DJANGO_SUPERUSER_EMAIL NOTE: Put the developer manteiner email here. :)
+# ENV DJANGO_SUPERUSER_PASSWORD 
+ENV DJANGO_SUPERUSER_EMAIL developers@agrovar.com
 
 # Install service dependencies
 RUN pip install --upgrade pip
