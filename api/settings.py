@@ -31,6 +31,7 @@ DEBUG = bool(os.environ.get("AGROVAR_DEBUG_MODE", None))
 # ALLOWED_HOSTS = os.environ.get("AGROVAR_ALLOWED_HOSTS", "localhost").split(",")
 ALLOWED_HOSTS = [
     "workstations.home.arpa",
+    "agrovar.home.arpa",
     "home.arpa",
     "localhost",
     "127.0.0.1",
@@ -172,6 +173,7 @@ CORS_ALLOW_HEADERS = (
 
 CORS_ALLOWED_ORIGINS = [
     "http://workstations.home.arpa",
+    "http://agrovar.home.arpa",
     "http://home.arpa",
     "http://localhost",
     "http://127.0.0.1",
