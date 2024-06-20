@@ -35,4 +35,4 @@ RUN python manage.py createsuperuser --no-input --username agrovar-superadmin
 EXPOSE 8000
 
 # Define the container entrypoint
-ENTRYPOINT [ "python", "manage.py", "runserver", "localhost:8000" ]
+ENTRYPOINT [ "python", "manage.py", "runserver", "0.0.0.0:8000" ]
