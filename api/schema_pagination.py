@@ -32,7 +32,7 @@ def encode_campaign_document_id_cursor(id: int) -> str:
         str: A new encoded object with a cursor object.
     """
 
-    return b64encode(f"user:{id}".encode("ascii")).decode("ascii")
+    return b64encode(f"id:{id}".encode("ascii")).decode("ascii")
 
 
 def use_resolve_cursor_hook(
