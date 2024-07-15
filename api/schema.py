@@ -4,25 +4,21 @@ from datetime import date
 import strawberry
 from strawberry.types import Info
 
-from api.schema_pagination import (
-    decode_campaign_document_id_cursor,
-    encode_campaign_document_id_cursor,
-    use_resolve_cursor_hook,
-)
+from api.pagination import resolve_cursor
 from repository import models
 
 # Query field resolvers
 
 
 def resolve_campaign_document(
-    self, info: Info, limit: int, cursor: typing.Optional[str] = None
+    self, info: Info, limit: int, cursor: str
 ) -> "PaginatedCampaignDocumentType":
 
-    sliced_campaign_documents, next_cursor = use_resolve_cursor_hook(
-        limit, cursor, models.CampaignDocumentsModel
+    sliced_campaign_documents, next_cursor = resolve_cursor(
+        search_limit=limit, encoded_cursor=cursor, model=models.CampaignDocumentsModel
     )
 
-    sliced_entries = [
+    paginated_entries = [
         CampaignDocumentType(
             id=entry.id,
             reference=entry.reference,
@@ -46,20 +42,20 @@ def resolve_campaign_document(
     ]
 
     return PaginatedCampaignDocumentType(
-        entries=sliced_entries,
+        entries=paginated_entries,
         page_meta=PaginationMetaType(next_cursor=next_cursor),
     )
 
 
 def resolve_variety_options(
-    self, info: Info, limit: int, cursor: typing.Optional[str] = None
+    self, info: Info, limit: int, cursor: str
 ) -> "PaginatedVarietyOptionsType":
 
-    sliced_variety_options, next_cursor = use_resolve_cursor_hook(
-        limit, cursor, models.VarietyOptionsModel
+    sliced_variety_options, next_cursor = resolve_cursor(
+        search_limit=limit, encoded_cursor=cursor, model=models.VarietyOptionsModel
     )
 
-    slice_entries = [
+    paginated_entries = [
         VarietyOptionsType(
             id=entry.id,
             tradename=entry.tradename,
@@ -69,19 +65,19 @@ def resolve_variety_options(
     ]
 
     return PaginatedVarietyOptionsType(
-        options=slice_entries, page_meta=PaginationMetaType(next_cursor=next_cursor)
+        options=paginated_entries, page_meta=PaginationMetaType(next_cursor=next_cursor)
     )
 
 
 def resolve_location_options(
-    self, info: Info, limit: int, cursor: typing.Optional[str] = None
+    self, info: Info, limit: int, cursor: str
 ) -> "PaginatedLocationOptionsType":
 
-    sliced_locations, next_cursor = use_resolve_cursor_hook(
-        limit, cursor, models.LocationOptionsModel
+    sliced_locations, next_cursor = resolve_cursor(
+        search_limit=limit, encoded_cursor=cursor, model=models.LocationOptionsModel
     )
 
-    sliced_entries = [
+    paginated_entries = [
         LocationOptionsType(
             id=entry.id,
             region_name=entry.region_name,
@@ -90,19 +86,19 @@ def resolve_location_options(
     ]
 
     return PaginatedLocationOptionsType(
-        options=sliced_entries, page_meta=PaginationMetaType(next_cursor=next_cursor)
+        options=paginated_entries, page_meta=PaginationMetaType(next_cursor=next_cursor)
     )
 
 
 def resolve_campaign_document_option(
-    self, info: Info, limit: int, cursor: typing.Optional[str] = None
+    self, info: Info, limit: int, cursor: str
 ) -> "PaginatedCampaignDocumentOptionsType":
 
-    sliced_campaign_documents, next_cursor = use_resolve_cursor_hook(
-        limit, cursor, models.CampaignDocumentsModel
+    sliced_campaign_documents, next_cursor = resolve_cursor(
+        search_limit=limit, encoded_cursor=cursor, model=models.CampaignDocumentsModel
     )
 
-    slice_entries = [
+    paginated_entries = [
         CampaignDocumentOptionType(
             id=entry.id,
             reference=entry.reference,
@@ -114,7 +110,7 @@ def resolve_campaign_document_option(
     ]
 
     return PaginatedCampaignDocumentOptionsType(
-        options=slice_entries,
+        options=paginated_entries,
         page_meta=PaginationMetaType(next_cursor=next_cursor),
     )
 

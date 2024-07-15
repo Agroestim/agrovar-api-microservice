@@ -7,8 +7,10 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-# ENV DJANGO_SUPERUSER_PASSWORD 
-ENV DJANGO_SUPERUSER_EMAIL developers@agrovar.com
+# ENV AGROVAR_SECRET_KEY <super secret key>
+# ENV DJANGO_SUPERUSER_PASSWORD <password>
+# ENV DJANGO_SUPERUSER_USERNAME <username>
+# ENV DJANGO_SUPERUSER_EMAIL <email>
 
 # Install service dependencies
 RUN pip install --upgrade pip
@@ -29,7 +31,7 @@ RUN python manage.py migrate repository
 RUN python manage.py collectstatic --no-input
 
 # Create superuser
-RUN python manage.py createsuperuser --no-input --username agrovar-superadmin
+RUN python manage.py createsuperuser --noinput
 
 # Expose 
 EXPOSE 8000
