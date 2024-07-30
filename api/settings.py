@@ -157,7 +157,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # CORS configuration
 # https://github.com/adamchainz/django-cors-headers
 
-
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 
@@ -175,6 +174,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://workstations.home.arpa",
     "http://agrovar.home.arpa",
     "http://home.arpa",
-    "http://localhost",
-    "http://127.0.0.1",
+    "http://localhost:80",
+    "http://127.0.0.1:80",
 ]

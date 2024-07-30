@@ -2,7 +2,7 @@ import typing
 from datetime import date
 
 import strawberry
-from strawberry.types import Info
+from strawberry import types
 
 from api.pagination import resolve_cursor
 from repository import models
@@ -11,7 +11,7 @@ from repository import models
 
 
 def resolve_campaign_document(
-    self, info: Info, limit: int, cursor: str
+    self, info: types.Info, limit: int, cursor: str
 ) -> "PaginatedCampaignDocumentType":
 
     sliced_campaign_documents, next_cursor = resolve_cursor(
@@ -48,7 +48,7 @@ def resolve_campaign_document(
 
 
 def resolve_variety_options(
-    self, info: Info, limit: int, cursor: str
+    self, info: types.Info, limit: int, cursor: str
 ) -> "PaginatedVarietyOptionsType":
 
     sliced_variety_options, next_cursor = resolve_cursor(
@@ -70,7 +70,7 @@ def resolve_variety_options(
 
 
 def resolve_location_options(
-    self, info: Info, limit: int, cursor: str
+    self, info: types.Info, limit: int, cursor: str
 ) -> "PaginatedLocationOptionsType":
 
     sliced_locations, next_cursor = resolve_cursor(
@@ -91,7 +91,7 @@ def resolve_location_options(
 
 
 def resolve_campaign_document_option(
-    self, info: Info, limit: int, cursor: str
+    self, info: types.Info, limit: int, cursor: str
 ) -> "PaginatedCampaignDocumentOptionsType":
 
     sliced_campaign_documents, next_cursor = resolve_cursor(
@@ -115,7 +115,7 @@ def resolve_campaign_document_option(
     )
 
 
-def resolve_preflight_options(self, info: Info) -> "PreflightOptionsType":
+def resolve_preflight_options(self, info: types.Info) -> "PreflightOptionsType":
     return PreflightOptionsType()
 
 
