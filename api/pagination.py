@@ -7,19 +7,86 @@ from django.db import models
 type ModelType = type[models.Model]
 
 
-class Cursor(typing.TypedDict, total=False):
+class Filters(typing.TypedDict):
+    filter: str
+    key: str
+    value: typing.Any
+
+
+class Cursor(typing.TypedDict):
     """Represents a pagination cursor."""
 
     id: int
     """Represents the next entry that cursor will target."""
 
-    select_by_related_field: str | None
-    """Defines how the cursor will filter the query."""
-
 
 class Pagination:
 
-    VALID_CURSOR_FIELDS = ["id", "select_by_related_field"]
+    CURSOR_FIELDS = ["id"]
+
+    CURSOR_PREFIXES = ["select_related"]
+    CURSOR_SUFFIXES = ["location_origin", "crop_variety"]
+
+    @staticmethod
+    def hash(cursor: str) -> str:
+        """This method generate a hash with the given cursor that will
+        be used to dynamicly cache all paginated queries.
+
+        Args:
+            cursor (str): A encoded cursor.
+
+        Returns:
+            str: A hash.
+        """
+
+        raise NotImplementedError("This method has not been implemented yet")
+
+    @staticmethod
+    def is_cached(hash: str) -> bool:
+        """Check if the given hash has been cached.
+
+        Args:
+            hash (str): A hash.
+
+        Returns:
+            bool: True if the hash has been cached.
+        """
+        raise NotImplementedError("This method has not been implemented yet")
+
+    @staticmethod
+    def __is_field_filter(key: str) -> bool:
+        """Check if the given key is a filter field of a cursor.
+
+        Args:
+            key (str): A key from a decoded cursor.
+
+        Returns:
+            bool: True if is a filter field.
+        """
+        field_namespace = key.split("__", 2)
+
+        if len(field_namespace) == 1:
+            return False
+
+        field_prefix = field_namespace[0]
+        field_suffix = field_namespace[1]
+
+        return (
+            field_prefix in Pagination.CURSOR_PREFIXES
+            and field_suffix in Pagination.CURSOR_SUFFIXES
+        )
+
+    @staticmethod
+    def __is_valid_field(key: str) -> bool:
+        """Check if the given key is in the valid cursor keys list.
+
+        Args:
+            key (str): A cursor key.
+
+        Returns:
+            bool: True if the key is valid.
+        """
+        return (key == "" or key == " ") or key in Pagination.CURSOR_FIELDS
 
     @staticmethod
     def check_valid_cursor(cursor: Cursor) -> bool:
@@ -32,13 +99,56 @@ class Pagination:
             bool: Returns True if all the dictionary fields are valid.
         """
 
-        # TODO []: Make a strong cursor validation.
-        return all(
-            [
-                field in Pagination.VALID_CURSOR_FIELDS or field != None
-                for field in cursor
-            ]
-        )
+        # NOTE []: This validation process can be improve using a cache system.
+
+        valid_keys = [
+            Pagination.__is_field_filter(key) or Pagination.__is_valid_field(key)
+            for key in cursor
+        ]
+
+        return all(valid_keys)
+
+    @staticmethod
+    def translate_filters(cursor: Cursor) -> Filters | None:
+        """This method translates the given cursor returning a dictionary
+        with the translated filters anf the original value.
+
+        Example:
+            ```Python
+            >>> Pagination.translate_filters({"id":0,"select_related__campaign":10})
+            {"filter": "select_related", "key":"campaign", "value":10}
+            ```
+
+        Args:
+            cursor (Cursor): A decoded cursor.
+
+        Returns:
+            dict[str, typing.Any]: A dictionary with the filter key and the original value.
+        """
+
+        if not Pagination.check_valid_cursor(cursor):
+            raise ValueError("Cannot translate an invalid cursor.")
+
+        filters: Filters = {"filter": "", "key": "", "value": ""}
+
+        for field in cursor:
+            field_namespace = field.split("__", 1)
+
+            if len(field_namespace) == 1:
+                continue
+
+            field_prefix = field_namespace[0]
+            field_suffix = field_namespace[1]
+            field_value = cursor.get(field)
+
+            filters.update(
+                {"filter": field_prefix, "key": field_suffix, "value": field_value}
+            )
+
+        if filters["filter"] == "":
+            return None
+
+        return filters
 
     @staticmethod
     def encode_cursor(cursor: Cursor) -> str:
@@ -98,47 +208,40 @@ def resolve_cursor(
         tuple[list[_ModelType], str]: A tuple with the queried entries and the next cursor.
     """
 
+    # Tries by default, using the initial record.
     if encoded_cursor == "":
-        raise ValueError("Cannot provide a empty value for 'encoded_cursor' argument")
+        encoded_cursor = Pagination.encode_cursor({"id": 1})
 
     cursor = Pagination.decode_cursor(encoded_cursor)
 
-    # Retrives the cursor metadata.
-    cursor_selection_filter_id = cursor["id"]
-    cursor_select_by_related_field = cursor["select_by_related_field"]
+    cursor_indexation = cursor.get("id")
+    cursor_filters = Pagination.translate_filters(cursor)
 
-    # Store in memory all entries selected.
-    selected_entries: list[ModelType] = []
+    retrieved_entries: list[ModelType] = []
 
-    # If the 'cursor_select_by_related_field' attribute were not provided
-    # then will search all entries greater than last entry id cursor.
-    if cursor_select_by_related_field == "":
-        selected_entries = [
-            entry for entry in model.objects.filter(id__gte=cursor_selection_filter_id)
+    if cursor_filters == None:
+        retrieved_entries = [
+            entry for entry in model.objects.filter(id__gte=cursor_indexation)
         ]
-    # If the 'cursor_select_by_related_field' attribute were provided then
-    # will search all entries related with the db field and any with an id
-    # greater than last entry id cursor.
+
     else:
-        selected_entries = [
-            entry
-            for entry in model.objects.select_related(
-                cursor_select_by_related_field
-            ).filter(id__gte=cursor_selection_filter_id)
-        ]
+        match cursor_filters["filter"]:
+            case "select_related":
+                retrieved_entries = [
+                    entry
+                    for entry in model.objects.filter(
+                        id__gte=cursor_indexation
+                    ).select_related(cursor_filters["key"])
+                ]
 
-    # Limit the query search using the selection limit.
-    paginated_entries = selected_entries[: search_limit + 1]
+    paginated_entries = retrieved_entries[: search_limit + 1]
 
-    # Use the last entry as a cursor using its id as a reference.
     next_cursor_target = paginated_entries.pop(-1)
     next_cursor_target_with_id = next_cursor_target.id  # type: ignore
 
-    # Encode the cursor.
     next_cursor = Pagination.encode_cursor(
         {
             "id": next_cursor_target_with_id,
-            "select_by_related_field": cursor_select_by_related_field,
         }
     )
 

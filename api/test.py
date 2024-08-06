@@ -5,42 +5,32 @@ from api.pagination import Cursor, Pagination
 
 class TestPaginationSystem(TestCase):
 
-    def test_encode_cursor_with_invalid_cursor(self) -> None:
-        pagination = Pagination()
-
-        invalid_cursor = {
-            "id": 0,
-            "select_by_related_field": "",
-            "invalid_field": "",
-        }
-
+    def test_encode_cursor_with_invalid_cursor_expecting_exception(self) -> None:
         with self.assertRaises(
             ValueError,
             msg="The 'encode_cursor' method must fail because it is reciving an invalid cursor argument.",
         ):
-            pagination.encode_cursor(invalid_cursor)  # type: ignore
+            Pagination.encode_cursor(
+                {
+                    "id": 1,
+                    "invalid_field": 2,
+                    "invalid_field__too": "abc",
+                }
+            )
 
-    def test_decode_cursor_with_invalid_cursor(self) -> None:
-        pagination = Pagination()
-
-        invalid_encoded_cursor = "eyJpZCI6IDAsInNlbGVjdF9ieV9yZWxhdGVkX2ZpZWxkIjogIiIsImludmFsaWRfZmllbGQiOiAiIn0="
-
+    def test_decode_cursor_with_invalid_cursor_expecting_no_exception(self) -> None:
         with self.assertRaises(
             ValueError,
-            msg="The 'decode_cursor' method must fail because it isreciving an invalid cursor argument.",
+            msg="The 'decode_cursor' method must fail because is reciving an invalid cursor argument.",
         ):
-            pagination.decode_cursor(invalid_encoded_cursor)
+            Pagination.decode_cursor("eyJpZCI6MSwgImludmFsaWRfZmllbGQiOjF9")
 
-    def test_encode_cursor_with_valid_cursor(self) -> None:
-        pagination = Pagination()
-
-        valid_cursor: Cursor = {"id": 0, "select_by_related_field": ""}
-        valid_encoded_cursor = (
-            "eyJpZCI6IDAsICJzZWxlY3RfYnlfcmVsYXRlZF9maWVsZCI6ICIifQ=="
-        )
+    def test_encode_cursor_with_valid_cursor_expecting_no_exception(self) -> None:
+        valid_cursor: Cursor = {"id": 0}
+        valid_encoded_cursor = "eyJpZCI6IDB9"
 
         try:
-            encoded_cursor = pagination.encode_cursor(valid_cursor)
+            encoded_cursor = Pagination.encode_cursor(valid_cursor)
         except:
             self.fail(
                 "The 'encode_cursor' must run the test without raise any exception."
@@ -48,16 +38,14 @@ class TestPaginationSystem(TestCase):
 
         self.assertEqual(encoded_cursor, valid_encoded_cursor)
 
-    def test_decode_cursor_with_valid_cursor(self) -> None:
-        pagination = Pagination()
-
-        valid_cursor: Cursor = {"id": 0, "select_by_related_field": ""}
+    def test_decode_cursor_with_valid_cursor_expecting_no_exception(self) -> None:
+        valid_cursor: Cursor = {"id": 0, "select_related__location": 0}
         valid_encoded_cursor = (
-            "eyJpZCI6IDAsICJzZWxlY3RfYnlfcmVsYXRlZF9maWVsZCI6ICIifQ=="
+            "eyJpZCI6IDAsICJzZWxlY3RfcmVsYXRlZF9fbG9jYXRpb24iOiAwfQ=="
         )
 
         try:
-            decoded_cursor = pagination.decode_cursor(valid_encoded_cursor)
+            decoded_cursor = Pagination.decode_cursor(valid_encoded_cursor)
         except:
             self.fail(
                 "The 'decode_cursor' must run the test without raise any exception."

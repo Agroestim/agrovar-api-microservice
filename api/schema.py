@@ -1,3 +1,4 @@
+import enum
 import typing
 from datetime import date
 
@@ -5,6 +6,10 @@ import strawberry
 from strawberry import types
 
 from api.pagination import resolve_cursor
+from api.schemas.campaign_types import CampaignDocumentType
+from api.schemas.location_types import LocationOptionsType
+from api.schemas.pagination_types import PaginationMetaType
+from api.schemas.variety_types import VarietyOptionsType
 from repository import models
 
 # Query field resolvers
@@ -119,20 +124,6 @@ def resolve_preflight_options(self, info: types.Info) -> "PreflightOptionsType":
     return PreflightOptionsType()
 
 
-# Pagination types
-
-
-@strawberry.type(
-    description="Represents the metadata required to perform a further query with additional data of the same type.",
-)
-class PaginationMetaType:
-    """
-    Represents the metadata required to perform a further query with additional data of the same type.
-    """
-
-    next_cursor: typing.Optional[str]
-
-
 @strawberry.type(
     description="Represents a wrapper for the CampaignDocumentOptionsType query with the pagination metadata."
 )
@@ -164,7 +155,7 @@ class PaginatedLocationOptionsType:
 )
 class PaginatedVarietyOptionsType:
     """
-    Represents the pagination wrapper that provides the required data for manage the pagination of the queries.
+    Represents twhe pagination wrapper that provides the required data for manage the pagination of the queries.
     """
 
     options: typing.List["VarietyOptionsType"]
@@ -180,85 +171,9 @@ class PaginatedCampaignDocumentType:
     Represents the pagination wrapper that provides the required data for manage the pagination of the queries.
     """
 
-    entries: typing.List["CampaignDocumentType"]
+    entries: typing.List[CampaignDocumentType]
 
     page_meta: typing.Optional[PaginationMetaType]
-
-
-# Other query types
-
-
-@strawberry.type(description="Represents a container for the campaign document.")
-class CampaignDocumentType:
-    """
-    A campaign document is a paper that collects all the information about the certain crop and involved growth
-    variables.
-    """
-
-    id: int
-
-    reference: str
-
-    paper_type: str
-
-    paper_creation_year: date
-
-    location_origin: str
-
-    latitude: float
-
-    longitude: float
-
-    paper_repetition: int
-
-    crop_variety: str
-
-    humidity_percentage_stat: int
-
-    performance_stat: int
-
-    relative_performance_stat: int
-
-    grain_count_crop_stat: int
-
-    grain_count_per_spike_stat: int
-
-    weight_per_thousand_grains_stat: int
-
-    proteins_percentage_stat: int
-
-    ph_stat: int
-
-
-# Preflight options Query types
-
-
-@strawberry.type(
-    description="Represents a minimal set of information of a crop variety entry"
-)
-class VarietyOptionsType:
-    """
-    Represents a minimal set of information a crop variety entry
-    """
-
-    id: int
-
-    tradename: str
-
-    variant_name: str
-
-
-@strawberry.type(
-    description="Represents a minimal set of information of a crop variety entry"
-)
-class LocationOptionsType:
-    """
-    Represents a minimal set of information of a location entry
-    """
-
-    id: int
-
-    region_name: str
 
 
 @strawberry.type(
@@ -306,7 +221,9 @@ class PreflightOptionsType:
     )
 
 
-@strawberry.type()
+@strawberry.type(
+    description="This type is a set of all the available queries in this API version."
+)
 class MixedType:
 
     campaign_documents: PaginatedCampaignDocumentType = strawberry.field(
