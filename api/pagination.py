@@ -7,25 +7,36 @@ from django.db import models
 type ModelType = type[models.Model]
 
 
-class Filters(typing.TypedDict):
-    filter: str
-    key: str
-    value: typing.Any
+MAX_SEARCH_LIMIT = 1000
+"""Represents the max search limit for all query."""
+
+
+class Filter(typing.TypedDict):
+    """Represents a filtration method for the pagination system."""
+
+    type: str
+    """Represents the filtrarion method."""
+
+    filter: dict[str, str]
+    """Represents a lookup search."""
 
 
 class Cursor(typing.TypedDict):
-    """Represents a pagination cursor."""
+    """Represents a cursor for the pagination system."""
 
     id: int
     """Represents the next entry that cursor will target."""
+
+    filter: Filter | None
+    """Represents a query filtration parameter."""
 
 
 class Pagination:
 
     CURSOR_FIELDS = ["id"]
 
-    CURSOR_PREFIXES = ["select_related"]
-    CURSOR_SUFFIXES = ["location_origin", "crop_variety"]
+    CURSOR_FILTERS = ["select_related"]
+    CURSOR_LOOKUPS = ["location_origin__id", "crop_variety__id"]
 
     @staticmethod
     def hash(cursor: str) -> str:
@@ -63,17 +74,20 @@ class Pagination:
         Returns:
             bool: True if is a filter field.
         """
+        if not key.__contains__("__"):
+            return False
+
         field_namespace = key.split("__", 2)
 
-        if len(field_namespace) == 1:
+        if field_namespace[1] == "":
             return False
 
         field_prefix = field_namespace[0]
         field_suffix = field_namespace[1]
 
         return (
-            field_prefix in Pagination.CURSOR_PREFIXES
-            and field_suffix in Pagination.CURSOR_SUFFIXES
+            field_prefix in Pagination.CURSOR_FILTERS
+            and field_suffix in Pagination.CURSOR_LOOKUPS
         )
 
     @staticmethod
@@ -89,6 +103,17 @@ class Pagination:
         return (key == "" or key == " ") or key in Pagination.CURSOR_FIELDS
 
     @staticmethod
+    def __is_valid_filter(lookup: str) -> bool:
+        """Check if the given lookup is valid.
+
+        Args:
+            lookup (str): A stringified dictionary with a django lookup expression.
+
+        Returns:
+            bool: True if its a valid lookup, False otherwise.
+        """
+
+    @staticmethod
     def check_valid_cursor(cursor: Cursor) -> bool:
         """Check if all the fields in the cursor dictionary are valid.
 
@@ -102,22 +127,22 @@ class Pagination:
         # NOTE []: This validation process can be improve using a cache system.
 
         valid_keys = [
-            Pagination.__is_field_filter(key) or Pagination.__is_valid_field(key)
+            True
+            or Pagination.__is_field_filter(key)
+            or Pagination.__is_valid_field(key)
             for key in cursor
         ]
 
         return all(valid_keys)
 
     @staticmethod
-    def translate_filters(cursor: Cursor) -> Filters | None:
+    def translate_filters(cursor: Cursor) -> Filter | None:
         """This method translates the given cursor returning a dictionary
         with the translated filters anf the original value.
 
         Example:
-            ```Python
-            >>> Pagination.translate_filters({"id":0,"select_related__campaign":10})
-            {"filter": "select_related", "key":"campaign", "value":10}
-            ```
+            >>> Pagination.translate_filters({"id":0,"select_related__<lookup>":<value>})
+            {"type": "select_related", "filter": {"<lookup>": <value>}}
 
         Args:
             cursor (Cursor): A decoded cursor.
@@ -129,23 +154,26 @@ class Pagination:
         if not Pagination.check_valid_cursor(cursor):
             raise ValueError("Cannot translate an invalid cursor.")
 
-        filters: Filters = {"filter": "", "key": "", "value": ""}
+        # Define an empty cursor by default.
+        filters: Filter = {"type": "", "filter": {"": ""}}
 
-        for field in cursor:
-            field_namespace = field.split("__", 1)
+        for __field in cursor:
+            filter_namespace = __field.split("__", 1)
 
-            if len(field_namespace) == 1:
+            # Continue when the namespace does not container a prefix.
+            if len(filter_namespace) == 1:
                 continue
 
-            field_prefix = field_namespace[0]
-            field_suffix = field_namespace[1]
-            field_value = cursor.get(field)
+            filter_type = filter_namespace[0]
+            filter_lookup = filter_namespace[1]
+            filter_lookup_value = cursor.get(__field)
 
             filters.update(
-                {"filter": field_prefix, "key": field_suffix, "value": field_value}
+                {"type": filter_type, "filter": {filter_lookup: filter_lookup_value}}
             )
 
-        if filters["filter"] == "":
+        # Return none if there is no any filters.
+        if filters["type"] == "":
             return None
 
         return filters
@@ -208,9 +236,15 @@ def resolve_cursor(
         tuple[list[_ModelType], str]: A tuple with the queried entries and the next cursor.
     """
 
-    # Tries by default, using the initial record.
+    # Check if the search limit exceeds the maximun search limit and raise an error if it happens.
+    if search_limit > MAX_SEARCH_LIMIT:
+        raise ValueError(
+            f"Cannot query more than {MAX_SEARCH_LIMIT} entries at a time."
+        )
+
+    # Use a default cursor if the client does not provides ones.
     if encoded_cursor == "":
-        encoded_cursor = Pagination.encode_cursor({"id": 1})
+        encoded_cursor = "eyJpZCI6MX0="  # That represents this -> {"id":1}
 
     cursor = Pagination.decode_cursor(encoded_cursor)
 
@@ -219,30 +253,38 @@ def resolve_cursor(
 
     retrieved_entries: list[ModelType] = []
 
+    # Perform the query using default search parameters.
     if cursor_filters == None:
         retrieved_entries = [
             entry for entry in model.objects.filter(id__gte=cursor_indexation)
         ]
 
+    # Perform the query using search filters parameters.
     else:
-        match cursor_filters["filter"]:
+        match cursor_filters["type"]:
             case "select_related":
                 retrieved_entries = [
                     entry
-                    for entry in model.objects.filter(
-                        id__gte=cursor_indexation
-                    ).select_related(cursor_filters["key"])
+                    for entry in model.objects.filter(id__gte=cursor_indexation).filter(
+                        **cursor_filters["filter"]
+                    )
                 ]
 
-    paginated_entries = retrieved_entries[: search_limit + 1]
+    # Send and empty list when no items were retrieved.
+    if len(retrieved_entries) == 0:
+        return [], None
 
-    next_cursor_target = paginated_entries.pop(-1)
-    next_cursor_target_with_id = next_cursor_target.id  # type: ignore
+    # Send all items without a trailing cursor when there less items than the limit.
+    if len(retrieved_entries) < search_limit:
+        return retrieved_entries, None
 
-    next_cursor = Pagination.encode_cursor(
-        {
-            "id": next_cursor_target_with_id,
-        }
-    )
+    # When the retrieved items count exceeds the limit, send a portion of this and a cursor.
+    else:
+        paginated_entries = retrieved_entries[: search_limit + 1]
 
-    return paginated_entries, next_cursor
+        next_cursor_target = paginated_entries.pop(-1)
+        next_cursor_target_with_id = next_cursor_target.id  # type: ignore
+
+        next_cursor = Pagination.encode_cursor({"id": next_cursor_target_with_id})
+
+        return paginated_entries, next_cursor

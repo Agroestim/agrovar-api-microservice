@@ -39,7 +39,7 @@ class TestPaginationSystem(TestCase):
         self.assertEqual(encoded_cursor, valid_encoded_cursor)
 
     def test_decode_cursor_with_valid_cursor_expecting_no_exception(self) -> None:
-        valid_cursor: Cursor = {"id": 0, "select_related__location": 0}
+        valid_cursor: Cursor = {"id": 0, "select_related__crop_variety": 0}
         valid_encoded_cursor = (
             "eyJpZCI6IDAsICJzZWxlY3RfcmVsYXRlZF9fbG9jYXRpb24iOiAwfQ=="
         )
